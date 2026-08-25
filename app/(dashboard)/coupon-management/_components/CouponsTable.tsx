@@ -5,63 +5,112 @@ import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CreateCouponModal, { CouponFormValues } from "./CreateCouponModal";
+import UpdateCouponModal from "./UpdateCouponModal";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export interface CouponItem {
   id: string;
   code: string;
   name: string;
+  description?: string;
   discountValue: string;
   eligibleUsers: string;
   usedCount: number;
   totalLimit: number;
+  startDate?: string;
   expiryDate: string;
   status: "Active" | "Scheduled" | "Expired";
 }
 
-export const initialCouponsData: CouponItem[] = [
-  {
-    id: "1",
-    code: "SUMMER25",
-    name: "Summer Sale 2026",
-    discountValue: "25%",
-    eligibleUsers: "All Users",
-    usedCount: 1842,
-    totalLimit: 5000,
-    expiryDate: "2026-08-31",
-    status: "Active",
-  },
-  {
-    id: "2",
-    code: "WINTER15",
-    name: "Winter Clearance 2026",
-    discountValue: "15%",
-    eligibleUsers: "New Customers",
-    usedCount: 1250,
-    totalLimit: 3000,
-    expiryDate: "2026-12-15",
-    status: "Scheduled",
-  },
-  {
-    id: "3",
-    code: "FALL20",
-    name: "Autumn Special 2026",
-    discountValue: "20%",
-    eligibleUsers: "Selected Items",
-    usedCount: 900,
-    totalLimit: 1000,
-    expiryDate: "2026-10-10",
-    status: "Expired",
-  },
-];
+export interface CouponApiResponse {
+  _id: string;
+  couponName: string;
+  couponCode: string;
+  description: string;
+  discountValue: number;
+  totalUsageLimit: number;
+  usedCount: number;
+  startDate: string;
+  expiryDate: string;
+  validitySettings: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
 
 export default function CouponsTable() {
-  const [coupons, setCoupons] = useState<CouponItem[]>(initialCouponsData);
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  const { data: responseData, isLoading } = useQuery({
+    queryKey: ['coupons'],
+    queryFn: async () => {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
+      const res = await fetch(`${backendUrl}/coupons`, {
+        headers: {
+          "Authorization": `Bearer ${session?.user?.accessToken || ""}`
+        }
+      });
+      if (!res.ok) throw new Error('Failed to fetch coupons');
+      return res.json();
+    },
+    enabled: !!session?.user?.accessToken,
+  });
+
+  const couponsData = responseData?.data || [];
+  
+  const mappedCoupons: CouponItem[] = couponsData.map((item: CouponApiResponse) => {
+    const now = new Date();
+    const expiry = new Date(item.expiryDate);
+    const start = new Date(item.startDate);
+    
+    let status: "Active" | "Scheduled" | "Expired" = "Active";
+    if (now > expiry) {
+      status = "Expired";
+    } else if (now < start) {
+      status = "Scheduled";
+    }
+
+    return {
+      id: item._id,
+      code: item.couponCode,
+      name: item.couponName,
+      description: item.description,
+      discountValue: `${item.discountValue}%`,
+      eligibleUsers: item.validitySettings === "ALL_USERS" ? "All Users" : item.validitySettings,
+      usedCount: item.usedCount || 0,
+      totalLimit: item.totalUsageLimit || 100,
+      startDate: item.startDate,
+      expiryDate: item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : "N/A",
+      status: status
+    };
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Scheduled" | "Expired">("All");
+  
+  // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<CouponItem | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [couponToDelete, setCouponToDelete] = useState<string | null>(null);
 
   const filteredCoupons = useMemo(() => {
-    return coupons.filter((item) => {
+    return mappedCoupons.filter((item) => {
       const matchesSearch =
         item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,26 +121,43 @@ export default function CouponsTable() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [coupons, searchTerm, statusFilter]);
+  }, [mappedCoupons, searchTerm, statusFilter]);
 
-  const handleDelete = (id: string) => {
-    console.log("Deleted Coupon ID:", id);
-    setCoupons((prev) => prev.filter((item) => item.id !== id));
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
+      const res = await fetch(`${backendUrl}/coupons/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${session?.user?.accessToken || ""}`
+        }
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete coupon");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Coupon deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["coupons"] });
+      setIsDeleteDialogOpen(false);
+      setCouponToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    }
+  });
+
+  const confirmDelete = () => {
+    if (couponToDelete) {
+      deleteMutation.mutate(couponToDelete);
+    }
   };
 
-  const handleCreateCoupon = (data: CouponFormValues) => {
-    const newCoupon: CouponItem = {
-      id: String(Date.now()),
-      code: data.couponCode,
-      name: data.couponName,
-      discountValue: data.discountValue,
-      eligibleUsers: data.validityTarget,
-      usedCount: 0,
-      totalLimit: 1000,
-      expiryDate: data.expiryDate,
-      status: "Active",
-    };
-    setCoupons((prev) => [newCoupon, ...prev]);
+  const handleEditClick = (coupon: CouponItem) => {
+    setSelectedCoupon(coupon);
+    setIsUpdateModalOpen(true);
   };
 
   return (
@@ -160,11 +226,50 @@ export default function CouponsTable() {
 
               {/* Table Body */}
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {filteredCoupons.map((row) => {
-                  const percentage = Math.min(
-                    100,
-                    Math.round((row.usedCount / row.totalLimit) * 100)
-                  );
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-4 px-6">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-32" />
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <Skeleton className="h-4 w-12" />
+                      </td>
+                      <td className="py-4 px-6">
+                        <Skeleton className="h-4 w-20" />
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-2 w-24 rounded-full" />
+                          <Skeleton className="h-3 w-10" />
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <Skeleton className="h-6 w-16 rounded-full mx-auto" />
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <Skeleton className="h-7 w-16 rounded-lg mx-auto" />
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredCoupons.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-500">
+                      No coupons found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCoupons.map((row) => {
+                    const percentage = Math.min(
+                      100,
+                      Math.round((row.usedCount / row.totalLimit) * 100)
+                    );
 
                   return (
                     <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
@@ -225,18 +330,30 @@ export default function CouponsTable() {
                         </span>
                       </td>
 
-                      {/* Delete Action Button */}
+                      {/* Action Buttons */}
                       <td className="py-4 px-6 text-center">
-                        <button
-                          onClick={() => handleDelete(row.id)}
-                          className="px-4 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[11px] font-semibold transition-colors shadow-2xs"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleEditClick(row)}
+                            className="px-4 py-1.5 rounded-lg bg-[#2B6CB0] hover:bg-[#235891] text-white text-[11px] font-semibold transition-colors shadow-2xs"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCouponToDelete(row.id);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="px-4 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[11px] font-semibold transition-colors shadow-2xs"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
-                })}
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -248,8 +365,39 @@ export default function CouponsTable() {
       <CreateCouponModal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
-        onSubmitSuccess={handleCreateCoupon}
       />
+
+      {/* UPDATE COUPON MODAL */}
+      <UpdateCouponModal
+        open={isUpdateModalOpen}
+        onOpenChange={setIsUpdateModalOpen}
+        couponData={selectedCoupon}
+      />
+
+      {/* DELETE CONFIRMATION ALERT DIALOG */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the coupon.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

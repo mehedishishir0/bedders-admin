@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CouponItem } from "./CouponsTable";
 import { useSession } from "next-auth/react";
 
 const couponFormSchema = z.object({
@@ -25,17 +26,19 @@ const couponFormSchema = z.object({
 
 export type CouponFormValues = z.infer<typeof couponFormSchema>;
 
-interface CreateCouponModalProps {
+interface UpdateCouponModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmitSuccess?: (data: CouponFormValues) => void;
+  couponData: CouponItem | null;
+  onSubmitSuccess?: () => void;
 }
 
-export default function CreateCouponModal({
+export default function UpdateCouponModal({
   open,
   onOpenChange,
+  couponData,
   onSubmitSuccess,
-}: CreateCouponModalProps) {
+}: UpdateCouponModalProps) {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
 
@@ -60,9 +63,24 @@ export default function CreateCouponModal({
     },
   });
 
+  React.useEffect(() => {
+    if (open && couponData) {
+      reset({
+        couponName: couponData.name || "",
+        couponCode: couponData.code || "",
+        description: couponData.description || "",
+        discountValue: couponData.discountValue ? couponData.discountValue.replace("%", "") : "",
+        totalUsageLimit: String(couponData.totalLimit || ""),
+        startDate: couponData.startDate ? couponData.startDate.split("T")[0] : "",
+        expiryDate: couponData.expiryDate ? couponData.expiryDate.split("T")[0] : "",
+        validityTarget: couponData.eligibleUsers === "First-Time Users" ? "First-Time Users" : "All Users",
+      });
+    }
+  }, [open, couponData, reset]);
+
   const formValues = watch();
 
-  const createMutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: async (data: CouponFormValues) => {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
       
@@ -79,8 +97,8 @@ export default function CreateCouponModal({
         expiryDate: data.expiryDate
       };
 
-      const res = await fetch(`${backendUrl}/coupons`, {
-        method: "POST",
+      const res = await fetch(`${backendUrl}/coupons/${couponData?.id}`, {
+        method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session?.user?.accessToken || ""}`
@@ -90,16 +108,15 @@ export default function CreateCouponModal({
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to create coupon");
+        throw new Error(errorData.message || "Failed to update coupon");
       }
       return res.json();
     },
-    onSuccess: (resData, variables) => {
-      toast.success("Coupon created successfully!");
+    onSuccess: () => {
+      toast.success("Coupon updated successfully!");
       queryClient.invalidateQueries({ queryKey: ["coupons"] });
-      reset();
       onOpenChange(false);
-      if (onSubmitSuccess) onSubmitSuccess(variables);
+      if (onSubmitSuccess) onSubmitSuccess();
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -107,13 +124,13 @@ export default function CreateCouponModal({
   });
 
   const onSubmit = (data: CouponFormValues) => {
-    createMutation.mutate(data);
+    updateMutation.mutate(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[960px] w-[94vw] p-8 sm:p-10 bg-white rounded-3xl shadow-2xl border-none font-sans overflow-hidden max-h-[90vh] overflow-y-auto">
-        <DialogTitle className="sr-only">Create New Coupon</DialogTitle>
+        <DialogTitle className="sr-only">Update Coupon</DialogTitle>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -329,10 +346,10 @@ export default function CreateCouponModal({
             </Button>
             <Button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={updateMutation.isPending}
               className="h-11 rounded-lg bg-[#2B6CB0] hover:bg-[#235891] text-white text-xs font-semibold shadow-none transition-colors"
             >
-              {createMutation.isPending ? "Creating..." : "Create Coupon"}
+              {updateMutation.isPending ? "Updating..." : "Update Coupon"}
             </Button>
           </div>
         </form>

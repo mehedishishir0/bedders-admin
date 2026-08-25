@@ -1,128 +1,140 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    rememberMe: false,
+  });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       const res = await signIn("credentials", {
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
         redirect: false,
       });
 
       if (res?.error) {
         toast.error(res.error);
-        setIsLoading(false);
-        return;
+      } else {
+        toast.success("Logged in successfully");
+        router.refresh();
       }
-
-      toast.success("Logged in successfully");
-      router.push("/dashboard");
-      router.refresh();
     } catch (error) {
       toast.error("Something went wrong");
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full relative flex items-center justify-center bg-[#fafafa] overflow-hidden">
-      {/* Background Watermark Pattern */}
-      <div 
-        className="absolute inset-0 z-0 opacity-[0.03]"
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 bg-[#f8fbfe]">
+      {/* Background Image Container */}
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-50"
         style={{
-          backgroundImage: "url('/logo.svg')",
-          backgroundSize: "300px",
-          backgroundRepeat: "repeat",
-          backgroundPosition: "center",
-          transform: "rotate(-15deg) scale(1.5)",
+          backgroundImage: `url('/authbg.png')`, // Replace with your image path in public folder
         }}
       />
-      
-      {/* Login Card */}
-      <div className="relative z-10 w-full max-w-md bg-white p-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50">
-        <div className="flex flex-col items-center mb-8 text-center">
-          <h1 className="text-[26px] font-bold text-[#2d3748] mb-2 tracking-tight">Login To Your Account</h1>
-          <p className="text-[#718096] text-sm">Please enter your email and password to continue</p>
+
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-[480px] flex flex-col items-center">
+        {/* Header Titles */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#1e3a5f] tracking-tight mb-2">
+            Login To Your Account
+          </h1>
+          <p className="text-sm md:text-base text-[#64748b]">
+            Please enter your email and password to continue
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs font-semibold text-[#4a5568]">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email address"
-              className="h-12 border-gray-200 placeholder:text-gray-400 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 rounded-lg"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-xs font-semibold text-[#4a5568]">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              className="h-12 border-gray-200 placeholder:text-gray-400 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 rounded-lg"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="remember" className="rounded-[4px] border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" />
+        {/* Form Card */}
+        <div className="w-full bg-white rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.05)] border border-[#e2e8f0]/60 p-6 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email Field */}
+            <div className="space-y-2">
               <label
-                htmlFor="remember"
-                className="text-xs text-[#718096] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                htmlFor="email"
+                className="block text-sm font-medium text-[#334155]"
               >
-                Remember me
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email address"
+                className="w-full h-11 px-3.5 rounded-lg border border-[#cbd5e1] bg-transparent text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#2d6fa8] focus:border-transparent transition-all"
+              />
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-[#334155]"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                className="w-full h-11 px-3.5 rounded-lg border border-[#cbd5e1] bg-transparent text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#2d6fa8] focus:border-transparent transition-all"
+              />
+            </div>
+
+            {/* Remember Me & Forgot Password */}
+            <div className="flex items-center justify-between text-xs md:text-sm pt-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-[#64748b]">
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
+                  className="w-4 h-4 rounded border-[#cbd5e1] text-[#2d6fa8] focus:ring-[#2d6fa8] accent-[#2d6fa8] cursor-pointer"
+                />
+                <span>Remember me</span>
               </label>
             </div>
-            <Link
-              href="/forgot-password"
-              className="text-xs font-medium text-[#3182ce] hover:text-blue-700 hover:underline"
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full h-11 ${isLoading ? 'bg-[#2d6fa8]/70 cursor-not-allowed' : 'bg-[#2d6fa8] hover:bg-[#255b8a] active:bg-[#1e4a70]'} text-white font-medium rounded-lg text-sm transition-all duration-150 shadow-sm mt-2`}
             >
-              Forgot password?
-            </Link>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full h-12 bg-[#2b6cb0] hover:bg-[#2c5282] text-white font-medium rounded-lg text-sm mt-2 transition-colors"
-            disabled={isLoading}
-          >
-            {isLoading ? "Logging in..." : "Log In"}
-          </Button>
-        </form>
-
-        <div className="mt-8 text-center text-xs text-[#718096]">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-[#3182ce] font-medium hover:underline">
-            Sign Up Here
-          </Link>
+              {isLoading ? 'Logging in...' : 'Log In'}
+            </button>
+          </form>
         </div>
       </div>
     </div>
