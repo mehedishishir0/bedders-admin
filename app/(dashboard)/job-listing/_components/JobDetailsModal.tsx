@@ -1,26 +1,13 @@
 "use client";
 
 import React from "react";
-import { X } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-
-export interface JobItem {
-  id: string;
-  name: string;
-  companyType: string;
-  logo: string;
-  employmentType: "Full-time" | "Part-time";
-  title: string;
-  location: string;
-  experienceLevel: string;
-  salary?: string;
-  description?: string;
-}
+import { X, MapPin, Briefcase, PoundSterling, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface JobDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  jobData: JobItem | null;
+  jobData: any; // using any to quickly match API response
 }
 
 export default function JobDetailsModal({
@@ -32,84 +19,148 @@ export default function JobDetailsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[620px] w-[92vw] p-8 sm:p-10 bg-white rounded-3xl shadow-2xl border-none font-sans overflow-hidden">
-        {/* Close Button */}
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute right-6 top-6 text-slate-500 hover:text-slate-800 transition-colors p-1"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Modal Content */}
-        <div className="space-y-6 pt-1 text-left">
-          {/* Header Title */}
-          <DialogTitle className="text-2xl font-bold text-slate-800">
-            Job Details
-          </DialogTitle>
-
-          {/* Name Field */}
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700 block">Name</span>
-            <p className="text-xs sm:text-[13px] text-slate-400 font-normal">
-              {jobData.name}
-            </p>
-          </div>
-
-          {/* Title & Employment Type */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 block">Title</span>
-              <p className="text-xs sm:text-[13px] text-slate-600 font-normal">
-                {jobData.title}
-              </p>
+      <DialogContent className="max-w-[700px] w-[95vw] p-0 bg-white rounded-2xl shadow-xl border-none font-sans overflow-hidden">
+        
+        {/* Header Section */}
+        <div className="bg-slate-50 border-b border-slate-100 p-6 sm:p-8 relative">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute right-6 top-6 text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 p-1.5 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+              <Briefcase className="w-6 h-6 text-white" />
             </div>
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Employment Type
-              </span>
-              <div>
-                <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#E2E8F0] text-slate-700">
-                  {jobData.employmentType}
+            <div>
+              <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">
+                {jobData.title}
+              </DialogTitle>
+              <div className="flex flex-wrap items-center gap-3 mt-2">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold capitalize ${
+                    jobData.status === 'approved' ? 'bg-green-100 text-green-700' :
+                    jobData.status === 'pending_approval' ? 'bg-amber-100 text-amber-700' :
+                    jobData.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                    'bg-slate-200 text-slate-700'
+                }`}>
+                  {jobData.status?.replace('_', ' ')}
+                </span>
+                <span className="text-[13px] text-slate-500 font-medium">
+                  {jobData.organizationUserId?.email || 'N/A'}
                 </span>
               </div>
             </div>
           </div>
+          <DialogDescription className="sr-only">Job Details for {jobData.title}</DialogDescription>
+        </div>
 
-          {/* Experience Level, Location, Salary */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Experience Level
-              </span>
-              <p className="text-xs sm:text-[13px] text-slate-600 font-normal">
-                {jobData.experienceLevel}
+        {/* Content Section */}
+        <div className="p-6 sm:p-8 max-h-[65vh] overflow-y-auto">
+          
+          {/* Quick Info Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div className="flex items-center gap-2 mb-1">
+                <Briefcase className="w-4 h-4 text-slate-400" />
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Job Type</span>
+              </div>
+              <p className="text-[13px] font-semibold text-slate-800 capitalize">{jobData.jobType?.replace('_', ' ')}</p>
+            </div>
+            
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div className="flex items-center gap-2 mb-1">
+                <MapPin className="w-4 h-4 text-slate-400" />
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Location</span>
+              </div>
+              <p className="text-[13px] font-semibold text-slate-800">{jobData.location || jobData.city}</p>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div className="flex items-center gap-2 mb-1">
+                <PoundSterling className="w-4 h-4 text-slate-400" />
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Salary</span>
+              </div>
+              <p className="text-[13px] font-semibold text-slate-800">
+                {jobData.salaryMin} - {jobData.salaryMax} {jobData.salaryCurrency}
               </p>
             </div>
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 block">Location</span>
-              <p className="text-xs sm:text-[13px] text-slate-600 font-normal">
-                {jobData.location}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 block">Salary</span>
-              <p className="text-xs sm:text-[13px] text-slate-600 font-normal">
-                {jobData.salary || "£14–£18 per hour"}
-              </p>
+
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Experience</span>
+              </div>
+              <p className="text-[13px] font-semibold text-slate-800">{jobData.requiredExperience} years</p>
             </div>
           </div>
 
-          {/* Job Description */}
-          <div className="space-y-1.5 pt-1">
-            <span className="text-xs font-semibold text-[#2B6CB0] block">
+          {/* Description */}
+          <div className="mb-8">
+            <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
               Job Description
-            </span>
-            <p className="text-xs sm:text-[13px] text-slate-400 font-normal leading-relaxed">
-              {jobData.description ||
-                "Describe the role, responsibilities, required qualifications, skills, and any additional information about the position."}
+            </h4>
+            <p className="text-[13px] text-slate-600 leading-relaxed whitespace-pre-wrap">
+              {jobData.description}
             </p>
           </div>
+
+          {/* Skills & Requirements Grid */}
+          <div className="grid sm:grid-cols-2 gap-8">
+            {/* Required Skills */}
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                Required Skills
+              </h4>
+              <ul className="space-y-2">
+                {jobData.requiredSkills?.map((skill: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                    <span className="text-[13px] text-slate-600 capitalize">{skill}</span>
+                  </li>
+                ))}
+                {(!jobData.requiredSkills || jobData.requiredSkills.length === 0) && (
+                  <p className="text-xs text-slate-400 italic">No specific skills listed.</p>
+                )}
+              </ul>
+            </div>
+
+            {/* Requirements */}
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                Other Requirements
+              </h4>
+              <ul className="space-y-2">
+                {jobData.requirements?.map((req: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                    <span className="text-[13px] text-slate-600 capitalize">{req}</span>
+                  </li>
+                ))}
+                {(!jobData.requirements || jobData.requirements.length === 0) && (
+                  <p className="text-xs text-slate-400 italic">No specific requirements listed.</p>
+                )}
+              </ul>
+            </div>
+          </div>
+
+          {/* Footer Metadata */}
+          <div className="mt-8 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-400">
+             <div className="flex items-center gap-1.5">
+               <span>Posted on:</span>
+               <span className="font-medium text-slate-600">{new Date(jobData.createdAt).toLocaleDateString()}</span>
+             </div>
+             <div className="flex items-center gap-1.5">
+               <span>Closes on:</span>
+               <span className="font-medium text-slate-600">{new Date(jobData.closesAt).toLocaleDateString()}</span>
+             </div>
+             <div className="flex items-center gap-1.5">
+               <span>Post Code:</span>
+               <span className="font-medium text-slate-600">{jobData.postCode}</span>
+             </div>
+          </div>
+          
         </div>
       </DialogContent>
     </Dialog>

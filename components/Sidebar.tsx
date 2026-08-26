@@ -30,7 +30,7 @@ import Image from "next/image";
 const adminNavigation = [
   { name: "Dashboard Overview", href: "/", icon: LayoutGrid },
   { name: "User Management", href: "/user-management", icon: Users },
-  { name: "Approvals", href: "/approvals", icon: BadgeCheck },
+  // { name: "Approvals", href: "/approvals", icon: BadgeCheck },
   { name: "Membership", href: "/membership", icon: User },
   { name: "Job Listing", href: "/job-listing", icon: ListChecks },
   {

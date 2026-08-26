@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -528,7 +529,7 @@ export default function UserManagementTable() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-slate-800">Delete User</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 text-sm">
-              This action cannot be undone. This will permanently delete the user's account and remove their data from our servers.
+              This action cannot be undone. This will permanently delete the user&apos;s account and remove their data from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4 sm:space-x-3">

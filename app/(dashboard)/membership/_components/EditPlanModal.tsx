@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useEffect } from "react";
@@ -9,7 +10,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { PlanFormData, PlanUserItem } from "@/types/types";
+import { PlanFormData } from "@/types/types";
 const formSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   price: z.string().min(1, "Price is required"),
@@ -20,7 +21,7 @@ const formSchema = z.object({
 interface EditPlanModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  planData?: PlanUserItem | null;
+  planData?: any;
   onSubmitSuccess?: (data: PlanFormData) => void;
 }
 

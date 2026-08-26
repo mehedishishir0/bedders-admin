@@ -3,12 +3,22 @@
 import React from "react";
 import { X, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { PlanUserItem } from "@/types/types";
+
+export interface MembershipPlan {
+  _id: string;
+  title: string;
+  price: number;
+  date: string;
+  content: string;
+  duration: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface ViewPlanModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  planData?: PlanUserItem | null;
+  planData?: MembershipPlan | null;
 }
 
 export default function ViewPlanModal({
@@ -16,17 +26,18 @@ export default function ViewPlanModal({
   onOpenChange,
   planData,
 }: ViewPlanModalProps) {
-  const title = planData?.title || "Enterprise";
-  const subtext = "Billed monthly, cancel anytime";
-  const price = planData?.price || "£149";
-  const billingCycle = "/month";
-  const features = planData?.features || [
-    "Top-tier directory placement",
-    "Unlimited everything",
-    "Enterprise verification badge",
-    "Homepage featured slot",
-    "Dedicated account manager",
-  ];
+  
+  if (!planData) return null;
+
+  const title = planData.title || "Membership Plan";
+  const subtext = `Created on ${new Date(planData.createdAt).toLocaleDateString()}`;
+  const price = `$${planData.price}`;
+  const billingCycle = `/${planData.duration}`;
+  
+  // If content contains newlines, split them, otherwise just put it in an array
+  const features = planData.content 
+    ? planData.content.split('\n').filter(Boolean) 
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -56,13 +67,13 @@ export default function ViewPlanModal({
             <span className="text-3xl sm:text-4xl font-extrabold text-[#2575FC] tracking-tight">
               {price}
             </span>
-            <span className="text-sm font-semibold text-[#2575FC]">
+            <span className="text-sm font-semibold text-[#2575FC] capitalize">
               {billingCycle}
             </span>
           </div>
 
           {/* Features Checkmark List */}
-          <div className="space-y-3 pt-2">
+          <div className="space-y-3 pt-4">
             {features.map((feature, idx) => (
               <div key={idx} className="flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-[#2E8540] fill-[#2E8540]/20 shrink-0" />
@@ -71,7 +82,18 @@ export default function ViewPlanModal({
                 </span>
               </div>
             ))}
+            
+            {/* If there were no newlines, just render the content text with one checkmark */}
+            {features.length === 0 && planData.content && (
+               <div className="flex items-center gap-3">
+                 <CheckCircle2 className="w-5 h-5 text-[#2E8540] fill-[#2E8540]/20 shrink-0" />
+                 <span className="text-xs sm:text-sm font-medium text-slate-700">
+                   {planData.content}
+                 </span>
+               </div>
+            )}
           </div>
+
         </div>
       </DialogContent>
     </Dialog>
