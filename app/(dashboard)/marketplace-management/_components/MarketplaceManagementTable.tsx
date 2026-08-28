@@ -1,276 +1,29 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import Image from "next/image";
-import { Search, ChevronDown, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { ChevronDown, Eye, Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import MarketplaceDetailsModal, {
-  MarketplaceItem,
-} from "./MarketplaceDetailsModal";
+import { Skeleton } from "@/components/ui/skeleton";
+import MarketplaceDetailsModal, { MarketplaceItem } from "./MarketplaceDetailsModal";
 
-export const initialMarketplaceData: MarketplaceItem[] = [
-  {
-    id: "1",
-    name: "Medicine",
-    subName: "Vitamin Medicine",
-    companyName: "Care Company",
-    image:
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=120&auto=format&fit=crop",
-    category: "Medication",
-    price: "$40",
-    amount: "$70",
-    expiryDate: "March 13, 2014",
-  },
-  {
-    id: "2",
-    name: "Sthethoscope",
-    subName: "Standard Stethoscope",
-    companyName: "Care Company",
-    image:
-      "https://images.unsplash.com/photo-1584982751601-97dcc096659c?q=80&w=120&auto=format&fit=crop",
-    category: "Gym",
-    price: "$40",
-    amount: "$65",
-    expiryDate: "February 9, 2015",
-  },
-  {
-    id: "3",
-    name: "Pressure machine",
-    subName: "Digital BP Monitor",
-    companyName: "Care Company",
-    image:
-      "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=120&auto=format&fit=crop",
-    category: "Docor",
-    price: "$40",
-    amount: "$85",
-    expiryDate: "February 11, 2014",
-  },
-  {
-    id: "4",
-    name: "Gloves",
-    subName: "Latex Exam Gloves",
-    companyName: "Care Company",
-    image:
-      "https://images.unsplash.com/photo-1583947215259-38e31be8751f?q=80&w=120&auto=format&fit=crop",
-    category: "Instruments",
-    price: "$40",
-    amount: "$50",
-    expiryDate: "February 11, 2014",
-  },
-  {
-    id: "5",
-    name: "Machine",
-    subName: "Sterilization Machine",
-    companyName: "Care Company",
-    image:
-      "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=120&auto=format&fit=crop",
-    category: "Clothes",
-    price: "$40",
-    amount: "$120",
-    expiryDate: "May 6, 2012",
-  },
-];
+type MarketplaceApiResponse = { data: MarketplaceItem[]; meta?: { page: number; limit: number; total: number } };
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
 
 export default function MarketplaceManagementTable() {
-  const [items, setItems] = useState<MarketplaceItem[]>(initialMarketplaceData);
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("Category");
-
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null);
-
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const matchSearch =
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.companyName.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchCategory =
-        categoryFilter === "Category" || item.category === categoryFilter;
-
-      return matchSearch && matchCategory;
-    });
-  }, [items, searchTerm, categoryFilter]);
-
-  const handleApprove = (id: string) => {
-    console.log("Approved Marketplace Item ID:", id);
-  };
-
-  const handleReject = (id: string) => {
-    console.log("Rejected Marketplace Item ID:", id);
-  };
-
-  const handleViewDetails = (item: MarketplaceItem) => {
-    setSelectedItem(item);
-    setIsModalOpen(true);
-  };
-
-  return (
-    <div >
-      <div className=" mx-auto space-y-6">
-        {/* TOP FILTER & SEARCH ROW */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Search Input */}
-          <div className="relative w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search..."
-              className="h-10 pl-10 pr-4 rounded-lg border-slate-200 bg-white text-xs placeholder-slate-400 focus-visible:ring-[#2B6CB0]"
-            />
-          </div>
-
-          {/* Category Dropdown */}
-          <div className="relative">
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-10 appearance-none bg-white border border-slate-200 rounded-lg px-4 pr-9 text-xs text-slate-600 outline-none hover:border-slate-300 transition-colors cursor-pointer"
-            >
-              <option value="Category">Category</option>
-              <option value="Medication">Medication</option>
-              <option value="Gym">Gym</option>
-              <option value="Docor">Docor</option>
-              <option value="Instruments">Instruments</option>
-              <option value="Clothes">Clothes</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-        </div>
-
-        {/* DATA TABLE CONTAINER */}
-        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              {/* Blue Table Header */}
-              <thead>
-                <tr className="bg-[#2B6CB0] text-white text-xs font-semibold">
-                  <th className="py-4 px-6">Name</th>
-                  <th className="py-4 px-6">Category</th>
-                  <th className="py-4 px-6">Price</th>
-                  <th className="py-4 px-6">Expiry Date</th>
-                  <th className="py-4 px-6 text-center">Action</th>
-                </tr>
-              </thead>
-
-              {/* Table Body */}
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {filteredItems.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="hover:bg-slate-50/70 transition-colors"
-                  >
-                    {/* Name + Thumbnail + Company */}
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-slate-100 shrink-0 bg-slate-100">
-                          <Image
-                            src={row.image}
-                            alt={row.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-slate-900 leading-tight">
-                            {row.name}
-                          </h4>
-                          <p className="text-[11px] text-slate-400 font-normal mt-0.5">
-                            {row.companyName}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Category Pill */}
-                    <td className="py-4 px-6">
-                      <span className="inline-block px-3 py-1 rounded-md text-[11px] font-semibold bg-[#E2E8F0] text-slate-700">
-                        {row.category}
-                      </span>
-                    </td>
-
-                    {/* Price */}
-                    <td className="py-4 px-6 text-slate-700 font-normal">
-                      {row.price}
-                    </td>
-
-                    {/* Expiry Date */}
-                    <td className="py-4 px-6 text-slate-600 font-normal">
-                      {row.expiryDate}
-                    </td>
-
-                    {/* Actions: View + Approve + Reject */}
-                    <td className="py-4 px-6 text-center">
-                      <div className="flex items-center justify-center gap-2.5">
-                        {/* View Button */}
-                        <button
-                          onClick={() => handleViewDetails(row)}
-                          title="View Details"
-                          className="p-1 text-slate-400 hover:text-[#2B6CB0] transition-colors"
-                        >
-                          <Eye className="w-4 h-4 text-amber-600/70 hover:text-amber-700" />
-                        </button>
-
-                        {/* Approve Button */}
-                        <button
-                          onClick={() => handleApprove(row.id)}
-                          className="px-4 py-1.5 rounded-lg bg-[#2E8540] hover:bg-[#256B33] text-white text-[11px] font-semibold transition-colors shadow-2xs"
-                        >
-                          Approve
-                        </button>
-
-                        {/* Reject Button */}
-                        <button
-                          onClick={() => handleReject(row.id)}
-                          className="px-4 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[11px] font-semibold transition-colors shadow-2xs"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* PAGINATION FOOTER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 text-xs text-slate-400 font-normal">
-          <span>Showing 1 to {filteredItems.length} of 12 results</span>
-
-          <div className="flex items-center gap-1.5">
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button className="w-8 h-8 rounded-lg bg-[#2B6CB0] text-white font-semibold flex items-center justify-center shadow-xs">
-              1
-            </button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-700 hover:bg-slate-50">
-              2
-            </button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-700 hover:bg-slate-50">
-              3
-            </button>
-            <span className="px-1 text-slate-400">...</span>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-700 hover:bg-slate-50">
-              8
-            </button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* MARKETPLACE DETAILS MODAL */}
-      <MarketplaceDetailsModal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        data={selectedItem}
-      />
-    </div>
-  );
+  const { data: responseData, isLoading, isError } = useQuery<MarketplaceApiResponse>({ queryKey: ["admin-marketplace-listings"], queryFn: async () => { const response = await fetch(`${backendUrl}/marketplace/admin/get-marketplace-listings?limit=100`, { headers: { Authorization: `Bearer ${session?.user?.accessToken || ""}` } }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || "Failed to fetch marketplace listings"); return data; }, enabled: !!session?.user?.accessToken });
+  const listings = useMemo(() => responseData?.data || [], [responseData]);
+  const categories = useMemo(() => Array.from(new Set(listings.map((listing) => listing.category).filter(Boolean))).sort(), [listings]);
+  const filteredListings = useMemo(() => listings.filter((listing) => { const search = searchTerm.toLowerCase(); return (listing.title.toLowerCase().includes(search) || listing.sellerUserId?.fullName?.toLowerCase().includes(search) || listing.sellerUserId?.email?.toLowerCase().includes(search)) && (categoryFilter === "Category" || listing.category === categoryFilter); }), [listings, searchTerm, categoryFilter]);
+  const listingAction = useMutation({ mutationFn: async ({ listingId, action, reason }: { listingId: string; action: "approve" | "reject"; reason?: string }) => { const response = await fetch(`${backendUrl}/marketplace/admin/${action}-marketplace-listing`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.user?.accessToken || ""}` }, body: JSON.stringify({ listingId, reason }) }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || `Failed to ${action} marketplace listing`); return { action }; }, onSuccess: ({ action }) => { toast.success(`Marketplace listing ${action}d successfully`); queryClient.invalidateQueries({ queryKey: ["admin-marketplace-listings"] }); }, onError: (error: Error) => toast.error(error.message) });
+  const handleAction = (listingId: string, action: "approve" | "reject") => { const reason = action === "reject" ? window.prompt("Enter rejection reason:") : "Approved by admin"; if (reason === null) return; listingAction.mutate({ listingId, action, reason: reason || undefined }); };
+  return <div><div className="mx-auto space-y-6"><div className="flex flex-wrap items-center justify-between gap-4"><div className="relative w-80"><Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search..." aria-label="Search marketplace listings" className="h-10 rounded-lg border-slate-200 bg-white pl-10 pr-4 text-xs placeholder-slate-400 focus-visible:ring-[#2B6CB0]" /></div><div className="relative"><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="Filter marketplace listings by category" className="h-10 cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white px-4 pr-9 text-xs text-slate-600 outline-none transition-colors hover:border-slate-300"><option value="Category">All categories</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" /></div></div><div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"><div className="overflow-x-auto"><table className="w-full border-collapse text-left"><thead><tr className="bg-[#2B6CB0] text-xs font-semibold text-white"><th className="px-6 py-4">Name</th><th className="px-6 py-4">Category</th><th className="px-6 py-4">Price</th><th className="px-6 py-4">Created Date</th><th className="px-6 py-4 text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100 text-xs text-slate-700">{isLoading ? Array.from({ length: 4 }).map((_, index) => <tr key={index}><td className="px-6 py-4"><Skeleton className="h-9 w-40" /></td><td className="px-6 py-4"><Skeleton className="h-5 w-20" /></td><td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td><td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td><td className="px-6 py-4"><Skeleton className="mx-auto h-7 w-28" /></td></tr>) : filteredListings.length > 0 ? filteredListings.map((listing) => <tr key={listing._id} className="transition-colors hover:bg-slate-50/70"><td className="px-6 py-4"><div className="flex items-center gap-3"><div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-100">{listing.photos?.[0] ? <img src={listing.photos[0]} alt="" className="h-full w-full object-cover" /> : null}</div><div><h4 className="leading-tight font-bold text-slate-900">{listing.title}</h4><p className="mt-0.5 text-[11px] font-normal text-slate-400">{listing.sellerUserId?.fullName || listing.sellerUserId?.email || "Unknown seller"}</p></div></div></td><td className="px-6 py-4"><span className="inline-block rounded-md bg-[#E2E8F0] px-3 py-1 text-[11px] font-semibold text-slate-700">{listing.category}</span></td><td className="px-6 py-4 font-normal text-slate-700">{listing.price == null ? "N/A" : `${listing.currency || "GBP"} ${listing.price}`}</td><td className="px-6 py-4 font-normal text-slate-600">{listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : "N/A"}</td><td className="px-6 py-4 text-center"><div className="flex items-center justify-center gap-2.5"><button onClick={() => { setSelectedItem(listing); setIsModalOpen(true); }} title="View details" aria-label={`View ${listing.title} details`} className="p-1 text-slate-400 transition-colors hover:text-[#2B6CB0]"><Eye className="h-4 w-4 text-amber-600/70 hover:text-amber-700" /></button>{listing.status === "pending_approval" && <><button disabled={listingAction.isPending} onClick={() => handleAction(listing._id, "approve")} className="rounded-lg bg-[#2E8540] px-4 py-1.5 text-[11px] font-semibold text-white shadow-2xs transition-colors hover:bg-[#256B33] disabled:cursor-not-allowed disabled:opacity-60">Approve</button><button disabled={listingAction.isPending} onClick={() => handleAction(listing._id, "reject")} className="rounded-lg bg-[#DC2626] px-4 py-1.5 text-[11px] font-semibold text-white shadow-2xs transition-colors hover:bg-[#B91C1C] disabled:cursor-not-allowed disabled:opacity-60">Reject</button></>}</div></td></tr>) : <tr><td colSpan={5} className="bg-slate-50/30 py-12 text-center font-medium text-slate-400">{isError ? "Could not load marketplace listings." : "No marketplace listings found."}</td></tr>}</tbody></table></div></div><div className="pt-2 text-xs font-normal text-slate-400">Showing {filteredListings.length} of {responseData?.meta?.total ?? listings.length} results</div></div><MarketplaceDetailsModal open={isModalOpen} onOpenChange={setIsModalOpen} data={selectedItem} /></div>;
 }

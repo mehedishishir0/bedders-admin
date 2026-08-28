@@ -5,88 +5,24 @@ import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 export interface MarketplaceItem {
-  id: string;
-  name: string;
-  subName?: string;
-  companyName: string;
-  image: string;
-  category: "Medication" | "Gym" | "Docor" | "Instruments" | "Clothes";
-  price: string;
-  amount?: string;
-  expiryDate: string;
+  _id: string;
+  title: string;
+  description?: string;
+  category: string;
+  price?: number;
+  currency?: string;
+  city?: string;
+  postCode?: string;
+  isAvailable?: boolean;
+  status: string;
+  photos?: string[];
+  createdAt?: string;
+  sellerUserId?: { fullName?: string; email?: string; role?: string };
 }
 
-interface MarketplaceDetailsModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  data: MarketplaceItem | null;
-}
+interface MarketplaceDetailsModalProps { open: boolean; onOpenChange: (open: boolean) => void; data: MarketplaceItem | null; }
 
-export default function MarketplaceDetailsModal({
-  open,
-  onOpenChange,
-  data,
-}: MarketplaceDetailsModalProps) {
+export default function MarketplaceDetailsModal({ open, onOpenChange, data }: MarketplaceDetailsModalProps) {
   if (!data) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[540px] w-[92vw] p-8 bg-white rounded-3xl shadow-2xl border-none font-sans overflow-hidden">
-        {/* Close Button */}
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute right-6 top-6 text-slate-500 hover:text-slate-800 transition-colors p-1"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Modal Content */}
-        <div className="space-y-6 pt-1 text-left">
-          {/* Header Title */}
-          <DialogTitle className="text-2xl font-bold text-slate-800">
-            Revenue management Details
-          </DialogTitle>
-
-          {/* Name Field */}
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700 block">Name</span>
-            <p className="text-xs sm:text-[13px] text-slate-400 font-normal">
-              {data.subName || "Vitamin Medicine"}
-            </p>
-          </div>
-
-          {/* Category & Expiry Date Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Category
-              </span>
-              <div>
-                <span className="inline-block px-3 py-1 rounded-md text-xs font-medium bg-[#E2E8F0] text-slate-700">
-                  {data.category}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Expiry Date
-              </span>
-              <p className="text-xs sm:text-[13px] text-slate-600 font-normal">
-                {data.expiryDate}
-              </p>
-            </div>
-          </div>
-
-          {/* Amount Field */}
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700 block">Amount</span>
-            <p className="text-xs sm:text-[13px] text-slate-600 font-normal">
-              {data.amount || "$70"}
-            </p>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="w-[92vw] max-w-[540px] overflow-hidden rounded-3xl border-none bg-white p-8 font-sans shadow-2xl"><button onClick={() => onOpenChange(false)} aria-label="Close marketplace details" className="absolute right-6 top-6 p-1 text-slate-500 transition-colors hover:text-slate-800"><X className="h-5 w-5" /></button><div className="space-y-6 pt-1 text-left"><DialogTitle className="text-2xl font-bold text-slate-800">Marketplace Details</DialogTitle><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Name</span><p className="text-xs font-normal text-slate-400 sm:text-[13px]">{data.title}</p></div><div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><span className="block text-xs font-semibold text-slate-700">Category</span><span className="inline-block rounded-md bg-[#E2E8F0] px-3 py-1 text-xs font-medium text-slate-700">{data.category}</span></div><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Status</span><p className="text-xs font-normal capitalize text-slate-600 sm:text-[13px]">{data.status.replace("_", " ")}</p></div></div><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Price</span><p className="text-xs font-normal text-slate-600 sm:text-[13px]">{data.price == null ? "N/A" : `${data.currency || "GBP"} ${data.price}`}</p></div><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Description</span><p className="text-xs font-normal text-slate-600 sm:text-[13px]">{data.description || "No description provided."}</p></div><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Location</span><p className="text-xs font-normal text-slate-600 sm:text-[13px]">{[data.city, data.postCode].filter(Boolean).join(", ") || "Not provided"}</p></div></div></DialogContent></Dialog>;
 }

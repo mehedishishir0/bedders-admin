@@ -5,113 +5,21 @@ import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 export interface SubscriptionRevenueItem {
-  id: string;
-  name: string;
-  plan: "montly" | "Monthly" | "Yearly";
-  amount: string;
-  status: "Active" | "Pending";
-  expiryDate: string;
+  _id: string;
+  amount: number;
+  paymentType: string;
+  status: "pending" | "completed" | "failed" | "refunded";
+  expiryDate?: string;
+  createdAt?: string;
+  stripePaymentIntentId?: string;
+  user?: { fullName?: string; email?: string; role?: string; phoneNumber?: string };
+  subscribe?: { planName?: string; price?: number; features?: string[] };
 }
 
-interface RevenueDetailsModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  data: SubscriptionRevenueItem | null;
-}
+interface RevenueDetailsModalProps { open: boolean; onOpenChange: (open: boolean) => void; data: SubscriptionRevenueItem | null; }
+const formatDate = (value?: string) => value ? new Date(value).toLocaleDateString() : "Not available";
 
-export default function RevenueDetailsModal({
-  open,
-  onOpenChange,
-  data,
-}: RevenueDetailsModalProps) {
+export default function RevenueDetailsModal({ open, onOpenChange, data }: RevenueDetailsModalProps) {
   if (!data) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[500px] w-[92vw] p-8 sm:p-9 bg-white rounded-3xl shadow-2xl border-none font-sans overflow-hidden">
-        {/* Close Button */}
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute right-6 top-6 text-slate-500 hover:text-slate-800 transition-colors p-1"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Modal Content */}
-        <div className="space-y-6 pt-1 text-left">
-          {/* Header Title */}
-          <DialogTitle className="text-2xl font-bold text-slate-800">
-            Revenue management Details
-          </DialogTitle>
-
-          {/* Name Field */}
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700 block">Name</span>
-            <p className="text-xs sm:text-[13px] text-slate-400 font-normal">
-              {data.name}
-            </p>
-          </div>
-
-          {/* Status & Expiry Date Row */}
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Status
-              </span>
-              <div>
-                <span
-                  className={`inline-block px-4 py-1 rounded-full text-xs font-medium border ${
-                    data.status === "Active"
-                      ? "border-[#34D399] text-[#059669] bg-[#ECFDF5]"
-                      : "border-[#FBBF24] text-[#D97706] bg-[#FFFBEB]"
-                  }`}
-                >
-                  {data.status}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Expiry Date
-              </span>
-              <p className="text-xs sm:text-[13px] text-slate-600 font-normal">
-                {data.expiryDate}
-              </p>
-            </div>
-          </div>
-
-          {/* Amount & Plan Row */}
-          <div className="grid grid-cols-2 gap-4 items-center">
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Amount
-              </span>
-              <p className="text-xs sm:text-[13px] text-slate-600 font-normal">
-                {data.amount}
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-slate-700 block">
-                Plan
-              </span>
-              <div>
-                <span
-                  className={`inline-block px-3 py-1 rounded-md text-[11px] font-medium capitalize ${
-                    data.plan.toLowerCase() === "montly" ||
-                    data.plan.toLowerCase() === "monthly"
-                      ? "bg-[#FEF3C7] text-[#D97706]"
-                      : "bg-[#F3E8FF] text-[#9333EA]"
-                  }`}
-                >
-                  {data.plan}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="w-[92vw] max-w-[500px] overflow-hidden rounded-3xl border-none bg-white p-8 font-sans shadow-2xl sm:p-9"><button onClick={() => onOpenChange(false)} aria-label="Close revenue details" className="absolute right-6 top-6 p-1 text-slate-500 transition-colors hover:text-slate-800"><X className="h-5 w-5" /></button><div className="space-y-6 pt-1 text-left"><DialogTitle className="text-2xl font-bold text-slate-800">Revenue Management Details</DialogTitle><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Member</span><p className="text-xs font-normal text-slate-400 sm:text-[13px]">{data.user?.fullName || "Not available"}</p><p className="text-xs font-normal text-slate-400">{data.user?.email || "No email available"}</p></div><div className="grid grid-cols-2 items-center gap-4"><div className="space-y-1.5"><span className="block text-xs font-semibold text-slate-700">Payment Status</span><span className={`inline-block rounded-full border px-4 py-1 text-xs font-medium capitalize ${data.status === "completed" ? "border-[#34D399] bg-[#ECFDF5] text-[#059669]" : "border-[#FBBF24] bg-[#FFFBEB] text-[#D97706]"}`}>{data.status}</span></div><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Expiry Date</span><p className="text-xs font-normal text-slate-600 sm:text-[13px]">{formatDate(data.expiryDate)}</p></div></div><div className="grid grid-cols-2 items-center gap-4"><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Amount</span><p className="text-xs font-normal text-slate-600 sm:text-[13px]">USD {data.amount}</p></div><div className="space-y-1.5"><span className="block text-xs font-semibold text-slate-700">Plan</span><span className="inline-block rounded-md bg-[#FEF3C7] px-3 py-1 text-[11px] font-medium text-[#D97706]">{data.subscribe?.planName || "Not available"}</span></div></div><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Membership Features</span><p className="text-xs font-normal text-slate-600 sm:text-[13px]">{data.subscribe?.features?.join(", ") || "No features listed"}</p></div><div className="grid grid-cols-2 gap-4"><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Member Role</span><p className="text-xs font-normal capitalize text-slate-600 sm:text-[13px]">{data.user?.role?.replace("_", " ") || "Not available"}</p></div><div className="space-y-1"><span className="block text-xs font-semibold text-slate-700">Payment Date</span><p className="text-xs font-normal text-slate-600 sm:text-[13px]">{formatDate(data.createdAt)}</p></div></div></div></DialogContent></Dialog>;
 }
