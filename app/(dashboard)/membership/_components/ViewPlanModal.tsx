@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, CheckCircle2 } from "lucide-react";
+import { X, CheckCircle2, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 export interface MembershipPlan {
@@ -11,6 +11,7 @@ export interface MembershipPlan {
   date: string;
   content: string;
   duration: string;
+  isPopular?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,9 +55,17 @@ export default function ViewPlanModal({
         <div className="space-y-6 pt-2 text-left">
           {/* Title & Subtext */}
           <div className="space-y-1">
-            <DialogTitle className="text-2xl font-bold text-slate-900 tracking-tight">
-              {title}
-            </DialogTitle>
+            <div className="flex items-center gap-2">
+              <DialogTitle className="text-2xl font-bold text-slate-900 tracking-tight">
+                {title}
+              </DialogTitle>
+              {planData.isPopular && (
+                <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-amber-200">
+                  <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                  Most Popular
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-400 font-normal">
               {subtext}
             </p>

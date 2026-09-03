@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Search, Plus, Eye, ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { Search, Plus, Eye, ChevronLeft, ChevronRight, Edit, Trash2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
@@ -188,7 +188,15 @@ export default function PlanTableSection() {
                     <tr key={row._id} className="hover:bg-slate-50/70 transition-colors">
                       
                       <td className="py-4 px-6 font-semibold text-slate-800">
-                        {row.title}
+                        <div className="flex items-center gap-2">
+                          <span>{row.title}</span>
+                          {row.isPopular && (
+                            <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-200">
+                              <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                              Popular
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-4 px-6 text-center">
@@ -304,6 +312,7 @@ export default function PlanTableSection() {
                 price: parseFloat(newPlan.price as string),
                 duration: newPlan.billingFrequency.toLowerCase(),
                 content: newPlan.content,
+                isPopular: Boolean(newPlan.isPopular),
                 date: new Date().toISOString(),
               }),
             });
@@ -342,6 +351,7 @@ export default function PlanTableSection() {
                 price: parseFloat(updatedPlan.price as string),
                 duration: updatedPlan.billingFrequency.toLowerCase(),
                 content: updatedPlan.content,
+                isPopular: Boolean(updatedPlan.isPopular),
               }),
             });
             const data = await res.json();

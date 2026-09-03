@@ -16,6 +16,7 @@ const formSchema = z.object({
   price: z.string().min(1, "Price is required"),
   billingFrequency: z.enum(["Monthly", "Yearly", "Monthly/Yearly"]),
   content: z.string().min(5, "Content description must be at least 5 characters"),
+  isPopular: z.boolean().optional(),
 });
 
 interface AddPlanModalProps {
@@ -39,8 +40,9 @@ export default function AddPlanModal({
     defaultValues: {
       title: "",
       price: "",
-      billingFrequency: "Monthly/Yearly",
+      billingFrequency: "Monthly",
       content: "",
+      isPopular: false,
     },
   });
 
@@ -103,7 +105,6 @@ export default function AddPlanModal({
                 {...register("billingFrequency")}
                 className="w-full h-11 appearance-none bg-white rounded-lg border border-slate-200 px-3.5 pr-10 text-xs sm:text-sm text-slate-700 outline-none focus:border-[#2B6CB0] focus:ring-1 focus:ring-[#2B6CB0] transition-all cursor-pointer"
               >
-                <option value="Monthly/Yearly">Monthly/Yearly</option>
                 <option value="Monthly">Monthly</option>
                 <option value="Yearly">Yearly</option>
               </select>
@@ -112,6 +113,22 @@ export default function AddPlanModal({
             {errors.billingFrequency && (
               <p className="text-[11px] text-red-500">{errors.billingFrequency.message}</p>
             )}
+          </div>
+
+          {/* Is Most Popular Checkbox */}
+          <div className="flex items-center gap-2.5 pt-1 text-left">
+            <input
+              type="checkbox"
+              id="add-isPopular"
+              {...register("isPopular")}
+              className="w-4 h-4 rounded border-slate-300 text-[#2B6CB0] focus:ring-[#2B6CB0] cursor-pointer"
+            />
+            <label
+              htmlFor="add-isPopular"
+              className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+            >
+              Mark as Most Popular Plan (Only 1 per billing duration)
+            </label>
           </div>
 
           {/* Content / Description Textarea */}

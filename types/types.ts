@@ -24,4 +24,5 @@ export interface PlanFormData {
   price: string;
   billingFrequency: "Monthly" | "Yearly" | "Monthly/Yearly";
   content: string;
+  isPopular?: boolean;
 }

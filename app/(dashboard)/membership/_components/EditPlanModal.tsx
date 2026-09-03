@@ -16,6 +16,7 @@ const formSchema = z.object({
   price: z.string().min(1, "Price is required"),
   billingFrequency: z.enum(["Monthly", "Yearly", "Monthly/Yearly"]),
   content: z.string().min(5, "Content description must be at least 5 characters"),
+  isPopular: z.boolean().optional(),
 });
 
 interface EditPlanModalProps {
@@ -44,22 +45,27 @@ export default function EditPlanModal({
       billingFrequency: "Monthly",
       content:
         "Enhanced directory listing\nUnlimited job posts\nPremium profile badge\nPriority support\nFeatured placement (3 days/month)",
+      isPopular: false,
     },
   });
 
   useEffect(() => {
     if (planData) {
+      const dur = planData.duration || planData.billingFrequency || planData.plan;
+      const billingFrequency =
+        typeof dur === "string" && (dur.toLowerCase() === "yearly" || dur === "Yearly")
+          ? "Yearly"
+          : "Monthly";
+
       reset({
         title: planData.title || "Standard",
-        price: planData.price || "$200",
-        billingFrequency:
-          planData.billingFrequency ||
-          (planData.plan === "montly" || planData.plan === "Monthly"
-            ? "Monthly"
-            : "Yearly"),
+        price: String(planData.price || 200),
+        billingFrequency,
         content:
+          planData.content ||
           planData.description ||
           "Enhanced directory listing\nUnlimited job posts\nPremium profile badge\nPriority support\nFeatured placement (3 days/month)",
+        isPopular: Boolean(planData.isPopular),
       });
     }
   }, [planData, reset]);
@@ -133,6 +139,22 @@ export default function EditPlanModal({
             )}
           </div>
 
+          {/* Is Most Popular Checkbox */}
+          <div className="flex items-center gap-2.5 pt-1 text-left">
+            <input
+              type="checkbox"
+              id="edit-isPopular"
+              {...register("isPopular")}
+              className="w-4 h-4 rounded border-slate-300 text-[#2B6CB0] focus:ring-[#2B6CB0] cursor-pointer"
+            />
+            <label
+              htmlFor="edit-isPopular"
+              className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+            >
+              Mark as Most Popular Plan (Only 1 per billing duration)
+            </label>
+          </div>
+
           {/* Content Textarea */}
           <div className="space-y-1.5 text-left">
             <label className="text-xs font-semibold text-slate-600">Content</label>
@@ -151,7 +173,7 @@ export default function EditPlanModal({
               type="submit"
               className="w-full h-12 rounded-lg bg-[#2B6CB0] hover:bg-[#235891] text-white text-sm font-semibold transition-colors shadow-none"
             >
-              Add Plan
+              Save Changes
             </Button>
           </div>
         </form>
