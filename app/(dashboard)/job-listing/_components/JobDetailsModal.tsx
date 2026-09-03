@@ -96,6 +96,19 @@ export default function JobDetailsModal({
             </div>
           </div>
 
+          {/* Rejection Reason Banner */}
+          {(jobData.rejectionReason || jobData.reason || jobData.status === 'rejected') && (
+            <div className="mb-6 rounded-xl bg-red-50 p-4 border border-red-200 text-red-800">
+              <h4 className="text-sm font-bold flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-4 h-4 text-red-600" />
+                Rejection Reason
+              </h4>
+              <p className="mt-1 text-xs leading-relaxed text-red-700 font-medium">
+                {jobData.rejectionReason || jobData.reason || "No specific reason provided."}
+              </p>
+            </div>
+          )}
+
           {/* Description */}
           <div className="mb-8">
             <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">

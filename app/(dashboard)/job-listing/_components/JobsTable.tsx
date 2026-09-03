@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import JobDetailsModal from "./JobDetailsModal";
+import RejectJobModal from "./RejectJobModal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function JobsTableSection() {
@@ -18,6 +19,9 @@ export default function JobsTableSection() {
     // Modal State
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState<any>(null);
+
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [rejectingJob, setRejectingJob] = useState<{ id: string; title: string } | null>(null);
 
     const { data: responseData, isLoading, refetch } = useQuery({
         queryKey: ['admin-jobs'],
@@ -38,12 +42,11 @@ export default function JobsTableSection() {
 
     const filteredJobs = useMemo(() => {
         return jobs.filter((job: any) => {
-            const matchSearch =
-                job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            const matchesSearch = job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                job.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 job.location?.toLowerCase().includes(searchTerm.toLowerCase());
-            
-            const matchStatus = statusFilter === "Status" || job.status === statusFilter.toLowerCase();
-            return matchSearch && matchStatus;
+            const matchesStatus = statusFilter === "Status" || job.status === statusFilter;
+            return matchesSearch && matchesStatus;
         });
     }, [jobs, searchTerm, statusFilter]);
 
@@ -71,31 +74,30 @@ export default function JobsTableSection() {
         }
     };
 
-    const handleReject = async (id: string) => {
-        const reason = prompt("Enter rejection reason:");
-        if (reason === null) return; // User cancelled
-        
-        try {
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
-            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            // @ts-ignore
-            if (session?.user?.accessToken) headers['Authorization'] = `Bearer ${session.user.accessToken}`;
+    const handleOpenRejectModal = (job: any) => {
+        setRejectingJob({ id: job._id, title: job.title });
+        setIsRejectModalOpen(true);
+    };
 
-            const res = await fetch(`${backendUrl}/jobs/admin/reject-job`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ jobId: id, reason }),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                toast.error(data.message || 'Failed to reject job');
-                return;
-            }
-            toast.success('Job rejected successfully!');
-            refetch();
-        } catch (error) {
-            toast.error('An error occurred while rejecting the job.');
+    const handleConfirmReject = async (reason: string) => {
+        if (!rejectingJob) return;
+        
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        // @ts-ignore
+        if (session?.user?.accessToken) headers['Authorization'] = `Bearer ${session.user.accessToken}`;
+
+        const res = await fetch(`${backendUrl}/jobs/admin/reject-job`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ jobId: rejectingJob.id, reason }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.message || 'Failed to reject job');
         }
+        toast.success('Job rejected successfully!');
+        refetch();
     };
 
     const handleViewJob = (job: any) => {
@@ -130,7 +132,7 @@ export default function JobsTableSection() {
                                 className="h-10 appearance-none bg-white border border-slate-200 rounded-lg px-4 pr-9 text-xs text-slate-600 outline-none hover:border-slate-300 transition-colors cursor-pointer capitalize"
                             >
                                 <option value="Status">All Status</option>
-                                <option value="pending">Pending</option>
+                                <option value="pending_approval">Pending Approval</option>
                                 <option value="approved">Approved</option>
                                 <option value="rejected">Rejected</option>
                                 <option value="draft">Draft</option>
@@ -178,22 +180,20 @@ export default function JobsTableSection() {
                                                     {row.title}
                                                 </h4>
                                                 <p className="text-[11px] text-slate-400 font-normal mt-0.5">
-                                                    Exp: {row.requiredExperience} yrs
+                                                    Posted: {new Date(row.createdAt).toLocaleDateString()}
                                                 </p>
                                             </td>
 
+                                            <td className="py-4 px-6 font-semibold text-slate-900">
+                                                {row.organizationUserId?.fullName || "Care Organization"}
+                                            </td>
+
+                                            <td className="py-4 px-6 font-normal capitalize">
+                                                {row.jobType?.replace('_', ' ') || "N/A"}
+                                            </td>
+
                                             <td className="py-4 px-6 font-normal">
-                                                {row.organizationUserId?.email || 'N/A'}
-                                            </td>
-
-                                            <td className="py-4 px-6">
-                                                <span className="inline-block px-3 py-1 rounded-md text-[11px] font-semibold bg-[#E2E8F0] text-slate-700 capitalize">
-                                                    {row.jobType?.replace('_', ' ')}
-                                                </span>
-                                            </td>
-
-                                            <td className="py-4 px-6 text-slate-700 font-normal">
-                                                {row.location}, {row.city}
+                                                {row.location || row.city || "N/A"}
                                             </td>
 
                                             <td className="py-4 px-6">
@@ -212,25 +212,29 @@ export default function JobsTableSection() {
                                                     <button
                                                         onClick={() => handleViewJob(row)}
                                                         title="View Job Details"
-                                                        className="p-1 text-slate-400 hover:text-[#2B6CB0] transition-colors"
+                                                        className="p-1 text-slate-400 hover:text-[#2B6CB0] transition-colors cursor-pointer"
                                                     >
                                                         <Eye className="w-4 h-4 text-amber-600/70 hover:text-amber-700" />
                                                     </button>
 
-                                                    {row.status === 'pending_approval' && (
+                                                    {row.status !== 'closed' && (
                                                         <>
-                                                            <button
-                                                                onClick={() => handleApprove(row._id)}
-                                                                className="px-4 py-1.5 rounded-lg bg-[#2E8540] hover:bg-[#256B33] text-white text-[11px] font-semibold transition-colors shadow-2xs"
-                                                            >
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleReject(row._id)}
-                                                                className="px-4 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[11px] font-semibold transition-colors shadow-2xs"
-                                                            >
-                                                                Reject
-                                                            </button>
+                                                            {row.status !== 'approved' && (
+                                                                <button
+                                                                    onClick={() => handleApprove(row._id)}
+                                                                    className="px-3 py-1.5 rounded-lg bg-[#2E8540] hover:bg-[#256B33] text-white text-[11px] font-semibold transition-colors shadow-2xs cursor-pointer"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                            )}
+                                                            {row.status !== 'rejected' && (
+                                                                <button
+                                                                    onClick={() => handleOpenRejectModal(row)}
+                                                                    className="px-3 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[11px] font-semibold transition-colors shadow-2xs cursor-pointer"
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            )}
                                                         </>
                                                     )}
                                                 </div>
@@ -260,6 +264,14 @@ export default function JobsTableSection() {
                 open={isViewModalOpen}
                 onOpenChange={setIsViewModalOpen}
                 jobData={selectedJob}
+            />
+
+            {/* REJECT JOB REASON MODAL */}
+            <RejectJobModal
+                open={isRejectModalOpen}
+                onOpenChange={setIsRejectModalOpen}
+                jobTitle={rejectingJob?.title}
+                onConfirm={handleConfirmReject}
             />
         </div>
     );
