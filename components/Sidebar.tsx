@@ -15,6 +15,8 @@ import {
   ShoppingBag,
   Ticket,
   DollarSign,
+  Image as ImageIcon,
+  Award,
 } from "lucide-react";
 import {
   Dialog,
@@ -45,6 +47,8 @@ const adminNavigation = [
   },
   
   { name: "Coupon Management", href: "/coupon-management", icon: Ticket },
+  { name: "Banner Management", href: "/banner-management", icon: ImageIcon },
+  { name: "Care Skills", href: "/care-skills", icon: Award },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

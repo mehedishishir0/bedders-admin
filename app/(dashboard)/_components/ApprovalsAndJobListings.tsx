@@ -7,4 +7,50 @@ export interface DashboardApproval { id: string; name: string; role: string; ema
 export interface DashboardJob { id: string; name: string; employmentTime: string; title: string; location: string; experienceLevel: string; }
 function Icon({ dark }: { dark?: boolean }) { return <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white shadow-xs ${dark ? "bg-[#061325]" : "bg-[#0F2D4A]"}`}>{dark ? "J" : "A"}</div>; }
 function ListCard({ title, href, children }: { title: string; href: string; children: React.ReactNode }) { return <Card className="rounded-2xl border-slate-200/80 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] sm:p-7"><CardHeader className="flex flex-row items-center justify-between space-y-0 p-0 pb-4"><CardTitle className="text-base font-bold text-[#3B386E]">{title}</CardTitle><Link href={href} className="text-xs font-medium text-slate-500 transition-colors hover:text-slate-800">View all</Link></CardHeader><CardContent className="divide-y divide-slate-100 p-0">{children}</CardContent></Card>; }
-export default function ApprovalsAndJobListings({ approvals, jobs, isLoading }: { approvals: DashboardApproval[]; jobs: DashboardJob[]; isLoading?: boolean }) { return <div className="w-full bg-[#F8FAFC] p-4 font-sans sm:p-6"><div className="mx-auto grid grid-cols-1 gap-6 lg:grid-cols-2"><ListCard title="Pending Approvals" href="/approvals">{isLoading ? <p className="py-8 text-center text-xs text-slate-400">Loading approvals...</p> : approvals.length ? approvals.map((item) => <div key={item.id} className="flex items-center gap-3.5 py-3.5 first:pt-2 last:pb-1"><Icon /><div className="min-w-0 truncate"><h4 className="text-xs font-semibold leading-tight text-slate-800 sm:text-sm">{item.name || item.email}</h4><p className="mt-0.5 text-[11px] font-normal capitalize text-slate-400 sm:text-xs">{item.role.replace("_", " ")} · {item.location || item.email}</p></div></div>) : <p className="py-8 text-center text-xs text-slate-400">No pending approvals.</p>}</ListCard><ListCard title="Job Listings" href="/job-listing">{isLoading ? <p className="py-8 text-center text-xs text-slate-400">Loading jobs...</p> : jobs.length ? jobs.map((item) => <div key={item.id} className="flex items-center gap-3.5 py-3.5 first:pt-2 last:pb-1"><Icon dark /><div className="min-w-0 truncate"><h4 className="text-xs font-semibold leading-tight text-slate-800 sm:text-sm">{item.title || item.name || "Untitled job"}</h4><p className="mt-0.5 text-[11px] font-normal text-slate-400 sm:text-xs">{[item.location, item.experienceLevel, item.employmentTime].filter(Boolean).join(" · ") || "Job listing"}</p></div></div>) : <p className="py-8 text-center text-xs text-slate-400">No job listings.</p>}</ListCard></div></div>; }
+export default function ApprovalsAndJobListings({ approvals, jobs, isLoading }: { approvals: DashboardApproval[]; jobs: DashboardJob[]; isLoading?: boolean }) {
+  return (
+    <div className="w-full bg-[#F8FAFC] p-4 font-sans sm:p-6">
+      <div className="mx-auto grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <ListCard title="Pending Approvals" href="/approvals">
+          {isLoading ? (
+            <p className="py-8 text-center text-xs text-slate-400">Loading approvals...</p>
+          ) : approvals.length ? (
+            approvals.slice(0, 5).map((item) => (
+              <div key={item.id} className="flex items-center gap-3.5 py-3.5 first:pt-2 last:pb-1">
+                <Icon />
+                <div className="min-w-0 truncate">
+                  <h4 className="text-xs font-semibold leading-tight text-slate-800 sm:text-sm">{item.name || item.email}</h4>
+                  <p className="mt-0.5 text-[11px] font-normal capitalize text-slate-400 sm:text-xs">
+                    {item.role.replace("_", " ")} · {item.location || item.email}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="py-8 text-center text-xs text-slate-400">No pending approvals.</p>
+          )}
+        </ListCard>
+        <ListCard title="Job Listings" href="/job-listing">
+          {isLoading ? (
+            <p className="py-8 text-center text-xs text-slate-400">Loading jobs...</p>
+          ) : jobs.length ? (
+            jobs.slice(0, 5).map((item) => (
+              <div key={item.id} className="flex items-center gap-3.5 py-3.5 first:pt-2 last:pb-1">
+                <Icon dark />
+                <div className="min-w-0 truncate">
+                  <h4 className="text-xs font-semibold leading-tight text-slate-800 sm:text-sm">{item.title || item.name || "Untitled job"}</h4>
+                  <p className="mt-0.5 text-[11px] font-normal text-slate-400 sm:text-xs">
+                    {[item.location, item.experienceLevel, item.employmentTime].filter(Boolean).join(" · ") || "Job listing"}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="py-8 text-center text-xs text-slate-400">No job listings.</p>
+          )}
+        </ListCard>
+      </div>
+    </div>
+  );
+}
+

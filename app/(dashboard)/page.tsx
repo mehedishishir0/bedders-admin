@@ -15,7 +15,7 @@ export default function DashboardPage() {
     queryKey: ["dashboard-home"],
     queryFn: async () => {
       const headers = { Authorization: `Bearer ${session?.user?.accessToken || ""}` };
-      const [overviewResponse, chartResponse, approvalsResponse, jobsResponse] = await Promise.all([fetch(`${backendUrl}/dashboard/overview`, { headers }), fetch(`${backendUrl}/dashboard/chart`, { headers }), fetch(`${backendUrl}/dashboard/approvals?limit=10`, { headers }), fetch(`${backendUrl}/dashboard/jobs?limit=10`, { headers })]);
+      const [overviewResponse, chartResponse, approvalsResponse, jobsResponse] = await Promise.all([fetch(`${backendUrl}/dashboard/overview`, { headers }), fetch(`${backendUrl}/dashboard/chart`, { headers }), fetch(`${backendUrl}/dashboard/approvals?limit=5`, { headers }), fetch(`${backendUrl}/dashboard/jobs?limit=5`, { headers })]);
       const [overview, chart, approvals, jobs] = await Promise.all([overviewResponse.json().catch(() => ({})), chartResponse.json().catch(() => ({})), approvalsResponse.json().catch(() => ({})), jobsResponse.json().catch(() => ({}))]);
       const failedResponse = [overviewResponse, chartResponse, approvalsResponse, jobsResponse].find((response) => !response.ok);
       if (failedResponse) throw new Error("Failed to load dashboard data");
