@@ -21,7 +21,7 @@ const Redirect = () => {
                 {/* Logo */}
                 <div className="mx-auto mb-4">
                     <Image
-                        src="/logo.svg"
+                        src="/logo.png"
                         alt="Logo"
                         width={900}
                         height={900}
