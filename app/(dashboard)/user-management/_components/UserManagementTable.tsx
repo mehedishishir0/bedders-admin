@@ -108,11 +108,20 @@ export default function UserManagementTable() {
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   // Fetch Users API
+  const itemsPerPage = 10;
   const { data: responseData, isLoading } = useQuery({
-    queryKey: ['users'],
+    queryKey: ['users', currentPage, itemsPerPage, searchTerm, selectedRole, selectedStatus],
     queryFn: async () => {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
-      const res = await fetch(`${backendUrl}/user`, {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(itemsPerPage),
+      });
+      if (searchTerm.trim()) params.append("searchTerm", searchTerm.trim());
+      if (selectedRole && selectedRole !== "All Roles") params.append("role", selectedRole);
+      if (selectedStatus && selectedStatus !== "All Status") params.append("status", selectedStatus);
+
+      const res = await fetch(`${backendUrl}/user?${params.toString()}`, {
         headers: {
           "Authorization": `Bearer ${session?.user?.accessToken || ""}`
         }
@@ -124,6 +133,8 @@ export default function UserManagementTable() {
   });
 
   const apiUsers: UserApiResponse[] = responseData?.data || [];
+  const totalItems = responseData?.meta?.total ?? apiUsers.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
   // Map API Data to Table Rows
   const users: UserRowItem[] = useMemo(() => {
@@ -156,28 +167,16 @@ export default function UserManagementTable() {
     });
   }, [apiUsers]);
 
-  // Filter Logic
+  // Filter Logic (Client location filter if needed)
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      const matchesSearch =
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase());
-
       const matchesLocation =
         selectedLocation === "All Locations" ||
         user.location.toLowerCase().includes(selectedLocation.toLowerCase());
 
-      const matchesRole =
-        selectedRole === "All Roles" || user.role === selectedRole;
-
-      const matchesStatus =
-        selectedStatus === "All Status" || user.status === selectedStatus;
-
-      return matchesSearch && matchesLocation && matchesRole && matchesStatus;
+      return matchesLocation;
     });
-  }, [users, searchTerm, selectedLocation, selectedRole, selectedStatus]);
+  }, [users, selectedLocation]);
 
   // Status Mutation (Approve, Reject, Suspend, Reactivate)
   const statusMutation = useMutation({
@@ -276,7 +275,10 @@ export default function UserManagementTable() {
               type="text"
               placeholder="Search by name, email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full bg-white text-slate-700 placeholder-slate-400 pl-11 pr-4 py-2.5 rounded-lg text-sm border border-blue-200/90 outline-none focus:ring-2 focus:ring-[#2C72A9]/20 transition-all shadow-xs"
             />
           </div>
@@ -285,7 +287,10 @@ export default function UserManagementTable() {
             <div className="relative min-w-[130px] flex-1 sm:flex-initial">
               <select
                 value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
+                onChange={(e) => {
+                  setSelectedLocation(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full bg-white border border-slate-200/90 rounded-lg px-4 py-2 text-xs font-normal text-[#2C72A9] outline-none appearance-none cursor-pointer pr-9 shadow-xs hover:border-slate-300 transition-colors"
               >
                 {locationFilterOptions.map((opt) => (
@@ -300,7 +305,10 @@ export default function UserManagementTable() {
             <div className="relative min-w-[120px] flex-1 sm:flex-initial">
               <select
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
+                onChange={(e) => {
+                  setSelectedRole(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full bg-white border border-slate-200/90 rounded-lg px-4 py-2 text-xs font-normal text-[#2C72A9] outline-none appearance-none cursor-pointer pr-9 shadow-xs hover:border-slate-300 transition-colors capitalize"
               >
                 {roleFilterOptions.map((opt) => (
@@ -315,7 +323,10 @@ export default function UserManagementTable() {
             <div className="relative min-w-[120px] flex-1 sm:flex-initial">
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full bg-white border border-slate-200/90 rounded-lg px-4 py-2 text-xs font-normal text-[#2C72A9] outline-none appearance-none cursor-pointer pr-9 shadow-xs hover:border-slate-300 transition-colors capitalize"
               >
                 {statusFilterOptions.map((opt) => (
@@ -410,26 +421,17 @@ export default function UserManagementTable() {
                             
                             <DropdownMenuSeparator className="my-1 bg-slate-100" />
                             
-                            {user.status === "pending" && (
-                              <>
-                                <DropdownMenuItem 
-                                  onClick={() => handleStatusChange(user.id, "approve")}
-                                  className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-green-50 hover:text-green-700 cursor-pointer rounded-lg font-medium transition-colors"
-                                >
-                                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                                  Approve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleStatusChange(user.id, "reject")}
-                                  className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-red-50 hover:text-red-700 cursor-pointer rounded-lg font-medium transition-colors"
-                                >
-                                  <XCircle className="w-3.5 h-3.5 text-red-500" />
-                                  Reject
-                                </DropdownMenuItem>
-                              </>
-                            )}
+                             {user.status !== "active" && (
+                              <DropdownMenuItem 
+                                onClick={() => handleStatusChange(user.id, "approve")}
+                                className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-green-50 hover:text-green-700 cursor-pointer rounded-lg font-medium transition-colors"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                                Approve
+                              </DropdownMenuItem>
+                             )}
 
-                            {user.status === "active" && (
+                             {user.status === "active" && (
                               <DropdownMenuItem 
                                 onClick={() => handleStatusChange(user.id, "suspend")}
                                 className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-amber-50 hover:text-amber-700 cursor-pointer rounded-lg font-medium transition-colors"
@@ -437,9 +439,19 @@ export default function UserManagementTable() {
                                 <Ban className="w-3.5 h-3.5 text-amber-500" />
                                 Suspend
                               </DropdownMenuItem>
-                            )}
+                             )}
 
-                            {(user.status === "suspended" || user.status === "rejected") && (
+                             {user.status !== "rejected" && user.status !== "suspended" && (
+                              <DropdownMenuItem 
+                                onClick={() => handleStatusChange(user.id, "reject")}
+                                className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-red-50 hover:text-red-700 cursor-pointer rounded-lg font-medium transition-colors"
+                              >
+                                <XCircle className="w-3.5 h-3.5 text-red-500" />
+                                Reject
+                              </DropdownMenuItem>
+                             )}
+
+                             {(user.status === "suspended" || user.status === "rejected") && (
                               <DropdownMenuItem 
                                 onClick={() => handleStatusChange(user.id, "reactivate")}
                                 className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer rounded-lg font-medium transition-colors"
@@ -447,74 +459,81 @@ export default function UserManagementTable() {
                                 <RotateCcw className="w-3.5 h-3.5 text-blue-500" />
                                 Reactivate
                               </DropdownMenuItem>
-                            )}
+                             )}
 
-                            <DropdownMenuSeparator className="my-1 bg-slate-100" />
+                             <DropdownMenuSeparator className="my-1 bg-slate-100" />
 
-                            <DropdownMenuItem 
-                              onClick={() => {
-                                setUserToDelete(user.id);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                              className="flex items-center gap-2.5 px-3 py-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer rounded-lg font-medium transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              Delete User
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="text-center py-12 text-slate-400 text-sm font-medium bg-slate-50/30"
-                    >
-                      <div className="flex flex-col items-center justify-center">
-                        <Search className="w-8 h-8 text-slate-300 mb-3" />
-                        No users or profiles found.
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                             <DropdownMenuItem 
+                               onClick={() => {
+                                 setUserToDelete(user.id);
+                                 setIsDeleteDialogOpen(true);
+                               }}
+                               className="flex items-center gap-2.5 px-3 py-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer rounded-lg font-medium transition-colors"
+                             >
+                               <Trash2 className="w-3.5 h-3.5" />
+                               Delete User
+                             </DropdownMenuItem>
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       </td>
+                     </tr>
+                   ))
+                 ) : (
+                   <tr>
+                     <td
+                       colSpan={6}
+                       className="text-center py-12 text-slate-400 text-sm font-medium bg-slate-50/30"
+                     >
+                       <div className="flex flex-col items-center justify-center">
+                         <Search className="w-8 h-8 text-slate-300 mb-3" />
+                         No users or profiles found.
+                       </div>
+                     </td>
+                   </tr>
+                 )}
+               </tbody>
+             </table>
+           </div>
+         </div>
 
-        {/* Bottom Pagination Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-          <p className="text-xs text-slate-500 font-medium">
-            Showing 1 to {filteredUsers.length} of {responseData?.meta?.total || filteredUsers.length} results
-          </p>
+         {/* Bottom Pagination Footer */}
+         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+           <p className="text-xs text-slate-500 font-medium">
+             Showing {totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} results
+           </p>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              className="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-700 text-xs transition-all shadow-xs"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setCurrentPage(1)}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold transition-all shadow-xs ${
-                currentPage === 1
-                  ? "bg-[#2B73A8] text-white border-none shadow-md shadow-blue-500/20"
-                  : "border border-slate-200 text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              className="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-700 text-xs transition-all shadow-xs"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+           <div className="flex items-center gap-1.5">
+             <button
+               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+               disabled={currentPage <= 1}
+               className="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-700 text-xs transition-all shadow-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+             >
+               <ChevronLeft className="w-4 h-4" />
+             </button>
+
+             {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+               <button
+                 key={pageNum}
+                 onClick={() => setCurrentPage(pageNum)}
+                 className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold transition-all shadow-xs cursor-pointer ${
+                   currentPage === pageNum
+                     ? "bg-[#2B73A8] text-white border-none shadow-md shadow-blue-500/20"
+                     : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                 }`}
+               >
+                 {pageNum}
+               </button>
+             ))}
+
+             <button
+               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+               disabled={currentPage >= totalPages}
+               className="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-700 text-xs transition-all shadow-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+             >
+               <ChevronRight className="w-4 h-4" />
+             </button>
+           </div>
+         </div>
 
       </div>
 
