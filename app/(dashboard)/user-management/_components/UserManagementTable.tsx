@@ -42,7 +42,7 @@ import {
 // ==========================================
 // 1. DATA TYPES
 // ==========================================
-export type UserRole = "admin" | "supplier" | "service_provider" | "carer" | "care_company" | "family" | string;
+export type UserRole = "admin" | "agency" | "supplier" | "service_provider" | "carer" | "care_company" | "family" | string;
 export type UserStatus = "active" | "suspended" | "pending" | "rejected" | string;
 
 export interface UserRowItem {
@@ -72,6 +72,7 @@ const locationFilterOptions = ["All Locations", "USA", "UK", "France", "India", 
 const roleFilterOptions: ("All Roles" | UserRole)[] = [
   "All Roles",
   "admin",
+  "agency",
   "supplier",
   "service_provider",
   "carer",
@@ -146,9 +147,20 @@ export default function UserManagementTable() {
       else if (item.details?.address) location = item.details.address;
       else if (item.details?.city) location = item.details.city;
 
-      let name = item.fullName || "N/A";
-      if (!item.fullName && item.details?.companyName) name = item.details.companyName;
-      if (!item.fullName && item.details?.firstName) name = `${item.details.firstName} ${item.details.lastName || ""}`.trim();
+      let name = "N/A";
+      if (item.role === "agency" && item.details?.name) {
+        name = item.details.name;
+      } else if (item.details?.companyName) {
+        name = item.details.companyName;
+      } else if (item.details?.organizationName) {
+        name = item.details.organizationName;
+      } else if (item.fullName) {
+        name = item.fullName;
+      } else if (item.details?.name) {
+        name = item.details.name;
+      } else if (item.details?.firstName) {
+        name = `${item.details.firstName} ${item.details.lastName || ""}`.trim();
+      }
 
       return {
         id: item._id,
@@ -313,7 +325,7 @@ export default function UserManagementTable() {
               >
                 {roleFilterOptions.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt === "All Roles" ? "Role" : opt.replace("_", " ")}
+                    {opt === "All Roles" ? "Role" : opt.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                   </option>
                 ))}
               </select>
