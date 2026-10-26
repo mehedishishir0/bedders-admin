@@ -17,6 +17,7 @@ import {
   DollarSign,
   Image as ImageIcon,
   Award,
+  BadgePoundSterling,
 } from "lucide-react";
 import {
   Dialog,
@@ -40,12 +41,12 @@ const adminNavigation = [
     href: "/marketplace-management",
     icon: ShoppingBag,
   },
-   {
+  {
     name: "Revenue Management",
     href: "/revenue-management",
-    icon: DollarSign,
+    icon: BadgePoundSterling,
   },
-  
+
   { name: "Coupon Management", href: "/coupon-management", icon: Ticket },
   { name: "Banner Management", href: "/banner-management", icon: ImageIcon },
   { name: "Care Skills", href: "/care-skills", icon: Award },
@@ -103,7 +104,7 @@ export function DashboardSidebar() {
             </Link>
           );
         })}
-        
+
         <button
           onClick={() => setOpen(true)}
           className="flex items-center gap-3 w-full px-4 py-3 mt-4 rounded-lg text-sm font-medium text-[#2A6592] hover:bg-[#E3E9EF] transition-all"

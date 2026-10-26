@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Link } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -133,6 +134,13 @@ export default function LoginPage() {
             >
               {isLoading ? 'Logging in...' : 'Log In'}
             </button>
+
+            <Link
+              href="https://www.thecaredirectory.co.uk/"
+              className="flex h-13.5 w-full items-center justify-center rounded-lg border border-cyan-700 px-8 text-base font-medium leading-5 text-cyan-700 transition-colors hover:bg-cyan-50"
+            >
+              Back to Home
+            </Link>
           </form>
         </div>
       </div>

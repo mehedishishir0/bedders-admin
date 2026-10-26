@@ -27,17 +27,17 @@ export default function ViewPlanModal({
   onOpenChange,
   planData,
 }: ViewPlanModalProps) {
-  
+
   if (!planData) return null;
 
   const title = planData.title || "Membership Plan";
   const subtext = `Created on ${new Date(planData.createdAt).toLocaleDateString()}`;
-  const price = `$${planData.price}`;
+  const price = `£${planData.price}`;
   const billingCycle = `/${planData.duration}`;
-  
+
   // If content contains newlines, split them, otherwise just put it in an array
-  const features = planData.content 
-    ? planData.content.split('\n').filter(Boolean) 
+  const features = planData.content
+    ? planData.content.split('\n').filter(Boolean)
     : [];
 
   return (
@@ -91,15 +91,15 @@ export default function ViewPlanModal({
                 </span>
               </div>
             ))}
-            
+
             {/* If there were no newlines, just render the content text with one checkmark */}
             {features.length === 0 && planData.content && (
-               <div className="flex items-center gap-3">
-                 <CheckCircle2 className="w-5 h-5 text-[#2E8540] fill-[#2E8540]/20 shrink-0" />
-                 <span className="text-xs sm:text-sm font-medium text-slate-700">
-                   {planData.content}
-                 </span>
-               </div>
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-[#2E8540] fill-[#2E8540]/20 shrink-0" />
+                <span className="text-xs sm:text-sm font-medium text-slate-700">
+                  {planData.content}
+                </span>
+              </div>
             )}
           </div>
 

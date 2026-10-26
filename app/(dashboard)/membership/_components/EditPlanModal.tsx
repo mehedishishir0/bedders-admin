@@ -41,7 +41,7 @@ export default function EditPlanModal({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "Standard",
-      price: "$200",
+      price: "200",
       billingFrequency: "Monthly",
       content:
         "Enhanced directory listing\nUnlimited job posts\nPremium profile badge\nPriority support\nFeatured placement (3 days/month)",
@@ -109,10 +109,10 @@ export default function EditPlanModal({
 
           {/* Price */}
           <div className="space-y-1.5 text-left">
-            <label className="text-xs font-semibold text-slate-600">Price</label>
+            <label className="text-xs font-semibold text-slate-600">Price (£)</label>
             <Input
               {...register("price")}
-              placeholder="$200"
+              placeholder="£200"
               className="h-11 rounded-lg border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus-visible:ring-[#2B6CB0]"
             />
             {errors.price && (

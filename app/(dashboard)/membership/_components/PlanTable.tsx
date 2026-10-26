@@ -24,7 +24,7 @@ import EditPlanModal from "./EditPlanModal";
 
 export default function PlanTableSection() {
   const { data: session } = useSession();
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [activePlanFilter, setActivePlanFilter] = useState<"All" | "monthly" | "yearly">("All");
 
@@ -43,7 +43,7 @@ export default function PlanTableSection() {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
-      
+
       if (session?.user?.accessToken) {
         headers['Authorization'] = `Bearer ${session.user.accessToken}`;
       }
@@ -61,7 +61,7 @@ export default function PlanTableSection() {
     return plans.filter((item) => {
       const matchSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchPlan = activePlanFilter === "All" || item.duration === activePlanFilter;
-      
+
       return matchSearch && matchPlan;
     });
   }, [plans, searchTerm, activePlanFilter]);
@@ -113,10 +113,10 @@ export default function PlanTableSection() {
   return (
     <div className="">
       <div className=" mx-auto space-y-6">
-        
+
         {/* TOP FILTER & ACTION BAR */}
         <div className="flex flex-wrap items-center justify-between gap-4">
-          
+
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative w-72">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -133,11 +133,10 @@ export default function PlanTableSection() {
                 <button
                   key={type}
                   onClick={() => setActivePlanFilter(type)}
-                  className={`px-3.5 py-1.5 text-xs rounded-full font-medium transition-all capitalize ${
-                    activePlanFilter === type
-                      ? "bg-[#6BA4D9] text-white"
-                      : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
+                  className={`px-3.5 py-1.5 text-xs rounded-full font-medium transition-all capitalize ${activePlanFilter === type
+                    ? "bg-[#6BA4D9] text-white"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
                 >
                   {type}
                 </button>
@@ -186,7 +185,7 @@ export default function PlanTableSection() {
                 ) : filteredData.length > 0 ? (
                   filteredData.map((row) => (
                     <tr key={row._id} className="hover:bg-slate-50/70 transition-colors">
-                      
+
                       <td className="py-4 px-6 font-semibold text-slate-800">
                         <div className="flex items-center gap-2">
                           <span>{row.title}</span>
@@ -201,18 +200,17 @@ export default function PlanTableSection() {
 
                       <td className="py-4 px-6 text-center">
                         <span
-                          className={`inline-block px-4 py-1 rounded-full text-[11px] font-medium capitalize ${
-                            row.duration === "monthly"
-                              ? "bg-[#FEF3C7] text-[#D97706]"
-                              : "bg-[#F3E8FF] text-[#9333EA]"
-                          }`}
+                          className={`inline-block px-4 py-1 rounded-full text-[11px] font-medium capitalize ${row.duration === "monthly"
+                            ? "bg-[#FEF3C7] text-[#D97706]"
+                            : "bg-[#F3E8FF] text-[#9333EA]"
+                            }`}
                         >
                           {row.duration}
                         </span>
                       </td>
 
                       <td className="py-4 px-6 text-center font-bold text-[#2B6CB0] text-sm">
-                        ${row.price}
+                        £{row.price}
                       </td>
 
                       <td className="py-4 px-6 text-center text-slate-500 font-normal">
@@ -298,7 +296,7 @@ export default function PlanTableSection() {
         onSubmitSuccess={async (newPlan) => {
           try {
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
-            
+
             const headers: Record<string, string> = {
               'Content-Type': 'application/json',
             };
@@ -309,7 +307,7 @@ export default function PlanTableSection() {
               headers,
               body: JSON.stringify({
                 title: newPlan.title,
-                price: parseFloat(newPlan.price as string),
+                price: parseFloat(String(newPlan.price).replace(/[^0-9.]/g, '') || "0"),
                 duration: newPlan.billingFrequency.toLowerCase(),
                 content: newPlan.content,
                 isPopular: Boolean(newPlan.isPopular),
@@ -337,7 +335,7 @@ export default function PlanTableSection() {
         onSubmitSuccess={async (updatedPlan) => {
           try {
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
-            
+
             const headers: Record<string, string> = {
               'Content-Type': 'application/json',
             };
@@ -348,7 +346,7 @@ export default function PlanTableSection() {
               headers,
               body: JSON.stringify({
                 title: updatedPlan.title,
-                price: parseFloat(updatedPlan.price as string),
+                price: parseFloat(String(updatedPlan.price).replace(/[^0-9.]/g, '') || "0"),
                 duration: updatedPlan.billingFrequency.toLowerCase(),
                 content: updatedPlan.content,
                 isPopular: Boolean(updatedPlan.isPopular),
