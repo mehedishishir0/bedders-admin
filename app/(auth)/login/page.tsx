@@ -135,12 +135,12 @@ export default function LoginPage() {
               {isLoading ? 'Logging in...' : 'Log In'}
             </button>
 
-            <Link
+            {/* <Link
               href="https://www.thecaredirectory.co.uk/"
               className="flex h-13.5 w-full items-center justify-center rounded-lg border border-cyan-700 px-8 text-base font-medium leading-5 text-cyan-700 transition-colors hover:bg-cyan-50"
             >
               Back to Home
-            </Link>
+            </Link> */}
           </form>
         </div>
       </div>
