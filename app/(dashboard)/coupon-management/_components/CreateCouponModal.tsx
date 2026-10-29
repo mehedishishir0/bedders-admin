@@ -16,6 +16,7 @@ const couponFormSchema = z.object({
   couponName: z.string().min(2, "Coupon name is required"),
   couponCode: z.string().min(2, "Coupon code is required"),
   description: z.string().optional(),
+  appliesTo: z.enum(["ALL", "DELIVERY", "SUBSCRIPTION", "PRODUCT"]),
   discountValue: z.string().min(1, "Discount value is required"),
   totalUsageLimit: z.string().min(1, "Total usage limit is required"),
   startDate: z.string().min(1, "Start date is required"),
@@ -52,6 +53,7 @@ export default function CreateCouponModal({
       couponName: "",
       couponCode: "",
       description: "",
+      appliesTo: "ALL",
       discountValue: "",
       totalUsageLimit: "",
       startDate: "",
@@ -70,6 +72,7 @@ export default function CreateCouponModal({
         couponName: data.couponName,
         couponCode: data.couponCode,
         description: data.description || "",
+        appliesTo: data.appliesTo || "ALL",
         price: 100, // Example price, modify if needed
         discountValue: Number(data.discountValue.replace("%", "")),
         allUsers: data.validityTarget === "All Users",
@@ -164,10 +167,29 @@ export default function CreateCouponModal({
                 />
               </div>
 
+              {/* Category (appliesTo) Dropdown */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-xs font-semibold text-slate-700">
+                  Applies To (Category)
+                </label>
+                <select
+                  {...register("appliesTo")}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#2B6CB0] bg-white cursor-pointer"
+                >
+                  <option value="ALL">ALL — All items</option>
+                  <option value="DELIVERY">DELIVERY — Delivery only</option>
+                  <option value="SUBSCRIPTION">SUBSCRIPTION — Subscriptions only</option>
+                  <option value="PRODUCT">PRODUCT — Products only</option>
+                </select>
+                {errors.appliesTo && (
+                  <p className="text-[11px] text-red-500">{errors.appliesTo.message}</p>
+                )}
+              </div>
+
               {/* Discount Value */}
               <div className="space-y-1.5 text-left">
                 <label className="text-xs font-semibold text-slate-700">
-                  Discount Value
+                  Discount Value (%)
                 </label>
                 <Input
                   {...register("discountValue")}
@@ -234,9 +256,14 @@ export default function CreateCouponModal({
               <div className="space-y-2 text-left">
                 <h3 className="text-sm font-bold text-slate-800">Live Preview</h3>
                 <div className="p-5 rounded-2xl bg-[#EAF2FF] border border-[#BFDBFE] flex flex-col items-start gap-2.5 shadow-xs">
-                  <span className="text-[11px] text-[#3B82F6] font-medium">
-                    Coupon Code
-                  </span>
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-[11px] text-[#3B82F6] font-medium">
+                      Coupon Code
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                      {formValues.appliesTo || "ALL"}
+                    </span>
+                  </div>
                   <span className="text-lg font-bold text-slate-900 tracking-tight">
                     {formValues.couponCode || "SUMMER25"}
                   </span>
@@ -244,7 +271,7 @@ export default function CreateCouponModal({
                     {formValues.discountValue || "25%"} OFF
                   </span>
                   <span className="text-[11px] text-slate-500 font-normal pt-1">
-                    Valid for {formValues.validityTarget || "All Users"}
+                    Valid for {formValues.validityTarget || "All Users"} • Category: {formValues.appliesTo || "ALL"}
                   </span>
                 </div>
               </div>
