@@ -26,6 +26,7 @@ export interface CouponItem {
   code: string;
   name: string;
   description?: string;
+  appliesTo: "ALL" | "DELIVERY" | "SUBSCRIPTION" | "PRODUCT";
   discountValue: string;
   eligibleUsers: string;
   usedCount: number;
@@ -40,12 +41,14 @@ export interface CouponApiResponse {
   couponName: string;
   couponCode: string;
   description: string;
+  appliesTo?: "ALL" | "DELIVERY" | "SUBSCRIPTION" | "PRODUCT";
   discountValue: number;
   totalUsageLimit: number;
   usedCount: number;
   startDate: string;
   expiryDate: string;
-  validitySettings: string;
+  validitySettings?: string;
+  allUsers?: boolean;
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -89,8 +92,9 @@ export default function CouponsTable() {
       code: item.couponCode,
       name: item.couponName,
       description: item.description,
+      appliesTo: item.appliesTo || "ALL",
       discountValue: `${item.discountValue}%`,
-      eligibleUsers: item.validitySettings === "ALL_USERS" ? "All Users" : item.validitySettings,
+      eligibleUsers: item.validitySettings === "ALL_USERS" ? "All Users" : (item.validitySettings || "All Users"),
       usedCount: item.usedCount || 0,
       totalLimit: item.totalUsageLimit || 100,
       startDate: item.startDate,
@@ -101,6 +105,7 @@ export default function CouponsTable() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Scheduled" | "Expired">("All");
+  const [categoryFilter, setCategoryFilter] = useState<"All" | "ALL" | "DELIVERY" | "SUBSCRIPTION" | "PRODUCT">("All");
   
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -114,14 +119,18 @@ export default function CouponsTable() {
       const matchesSearch =
         item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.eligibleUsers.toLowerCase().includes(searchTerm.toLowerCase());
+        item.eligibleUsers.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.appliesTo.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         statusFilter === "All" || item.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      const matchesCategory =
+        categoryFilter === "All" || item.appliesTo === categoryFilter;
+
+      return matchesSearch && matchesStatus && matchesCategory;
     });
-  }, [mappedCoupons, searchTerm, statusFilter]);
+  }, [mappedCoupons, searchTerm, statusFilter, categoryFilter]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -160,20 +169,50 @@ export default function CouponsTable() {
     setIsUpdateModalOpen(true);
   };
 
+  const renderCategoryBadge = (category: "ALL" | "DELIVERY" | "SUBSCRIPTION" | "PRODUCT") => {
+    switch (category) {
+      case "DELIVERY":
+        return (
+          <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Delivery Only
+          </span>
+        );
+      case "SUBSCRIPTION":
+        return (
+          <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+            Subscription
+          </span>
+        );
+      case "PRODUCT":
+        return (
+          <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            Products Only
+          </span>
+        );
+      case "ALL":
+      default:
+        return (
+          <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-blue-50 text-[#2B6CB0] border border-blue-200">
+            All Items
+          </span>
+        );
+    }
+  };
+
   return (
     <div>
-      <div className=" space-y-6">
+      <div className="space-y-6">
         
         {/* TOP CONTROLS ROW */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           
-          {/* Status Filter Pills */}
-          <div className="flex items-center gap-2">
+          {/* Status and Category Filter Pills */}
+          <div className="flex flex-wrap items-center gap-2">
             {(["All", "Active", "Scheduled", "Expired"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setStatusFilter(tab)}
-                className={`px-4 py-1.5 text-xs rounded-full font-medium transition-all ${
+                className={`px-4 py-1.5 text-xs rounded-full font-medium transition-all cursor-pointer ${
                   statusFilter === tab
                     ? "bg-[#6BA4D9] text-white"
                     : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -182,6 +221,20 @@ export default function CouponsTable() {
                 {tab}
               </button>
             ))}
+
+            <div className="h-4 w-px bg-slate-300 mx-1 hidden sm:block" />
+
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value as any)}
+              className="h-8 px-3 text-xs rounded-full border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2B6CB0] font-medium cursor-pointer"
+            >
+              <option value="All">All Categories</option>
+              <option value="ALL">ALL (All items)</option>
+              <option value="DELIVERY">DELIVERY (Delivery only)</option>
+              <option value="SUBSCRIPTION">SUBSCRIPTION (Subscriptions)</option>
+              <option value="PRODUCT">PRODUCT (Products only)</option>
+            </select>
           </div>
 
           {/* Search Input & New Coupon CTA */}
@@ -191,14 +244,14 @@ export default function CouponsTable() {
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search..."
+                placeholder="Search code, name, category..."
                 className="h-10 pl-10 pr-4 rounded-lg border-slate-200 bg-white text-xs placeholder-slate-400 focus-visible:ring-[#2B6CB0]"
               />
             </div>
 
             <Button
               onClick={() => setIsCreateModalOpen(true)}
-              className="h-10 px-5 rounded-lg bg-[#2B6CB0] hover:bg-[#235891] text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs border-none"
+              className="h-10 px-5 rounded-lg bg-[#2B6CB0] hover:bg-[#235891] text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs border-none cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>New Coupon</span>
@@ -215,6 +268,7 @@ export default function CouponsTable() {
               <thead>
                 <tr className="bg-[#2B6CB0] text-white text-xs font-semibold">
                   <th className="py-4 px-6">Coupon Code</th>
+                  <th className="py-4 px-6">Applies To</th>
                   <th className="py-4 px-6">Value</th>
                   <th className="py-4 px-6">Eligible Users</th>
                   <th className="py-4 px-6">Usage</th>
@@ -234,6 +288,9 @@ export default function CouponsTable() {
                           <Skeleton className="h-4 w-24" />
                           <Skeleton className="h-3 w-32" />
                         </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <Skeleton className="h-5 w-20 rounded-md" />
                       </td>
                       <td className="py-4 px-6">
                         <Skeleton className="h-4 w-12" />
@@ -260,7 +317,7 @@ export default function CouponsTable() {
                   ))
                 ) : filteredCoupons.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-500">
+                    <td colSpan={8} className="py-8 text-center text-slate-500">
                       No coupons found.
                     </td>
                   </tr>
@@ -283,6 +340,11 @@ export default function CouponsTable() {
                             {row.name}
                           </span>
                         </div>
+                      </td>
+
+                      {/* Applies To / Category */}
+                      <td className="py-4 px-6">
+                        {renderCategoryBadge(row.appliesTo)}
                       </td>
 
                       {/* Value */}
@@ -335,7 +397,7 @@ export default function CouponsTable() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleEditClick(row)}
-                            className="px-4 py-1.5 rounded-lg bg-[#2B6CB0] hover:bg-[#235891] text-white text-[11px] font-semibold transition-colors shadow-2xs"
+                            className="px-4 py-1.5 rounded-lg bg-[#2B6CB0] hover:bg-[#235891] text-white text-[11px] font-semibold transition-colors shadow-2xs cursor-pointer"
                           >
                             Edit
                           </button>
@@ -344,7 +406,7 @@ export default function CouponsTable() {
                               setCouponToDelete(row.id);
                               setIsDeleteDialogOpen(true);
                             }}
-                            className="px-4 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[11px] font-semibold transition-colors shadow-2xs"
+                            className="px-4 py-1.5 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-[11px] font-semibold transition-colors shadow-2xs cursor-pointer"
                           >
                             Delete
                           </button>
@@ -391,7 +453,7 @@ export default function CouponsTable() {
                 confirmDelete();
               }}
               disabled={deleteMutation.isPending}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600 cursor-pointer"
             >
               {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
